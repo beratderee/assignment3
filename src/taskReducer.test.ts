@@ -42,7 +42,7 @@ describe('taskReducer', () => {
     let state = taskReducer(initialState, { type: 'add', id: '1', title: 'T1' })
     state = taskReducer(state, { type: 'add', id: '2', title: 'T2' })
     state = taskReducer(state, { type: 'advance', id: '1' })
-    state = taskReducer(state, { type: 'advance', id: '1' }) // T1 is done
+    state = taskReducer(state, { type: 'advance', id: '1' })
     state = taskReducer(state, { type: 'setFilter', filter: 'done' })
 
     state = taskReducer(state, { type: 'clearDone' })
@@ -62,7 +62,7 @@ describe('taskReducer', () => {
 
     let state = taskReducer(initialState, { type: 'add', id: '1', title: 'T1' })
     state = taskReducer(state, { type: 'advance', id: '1' })
-    state = taskReducer(state, { type: 'advance', id: '1' }) // done
+    state = taskReducer(state, { type: 'advance', id: '1' })
     state = taskReducer(state, { type: 'clearDone' })
     expect(state.tasks).toHaveLength(0)
 
@@ -71,29 +71,30 @@ describe('taskReducer', () => {
     expect(state.tasks[0].status).toBe('done')
   })
 
-    it('does not mutate previous state', () => {
-        const prevTasks = [{ id: '1', title: 'Immutable', status: 'todo' as const }]
-        const prevState: State = {
-        tasks: prevTasks,
-        filter: 'all',
-        past: [],
-        }
+  it('does not mutate previous state (Object.freeze check)', () => {
+    const frozenTasks = Object.freeze([
+      Object.freeze({ id: '1', title: 'Frozen', status: 'todo' as const }),
+    ])
+    const frozenState = Object.freeze({
+      tasks: frozenTasks,
+      filter: 'all',
+      past: Object.freeze([]),
+    }) as unknown as State
 
-        const nextState = taskReducer(prevState, { type: 'advance', id: '1' })
-        expect(nextState).not.toBe(prevState)
-        expect(nextState.tasks).not.toBe(prevTasks)
-        expect(prevState.tasks[0].status).toBe('todo')
-        expect(nextState.tasks[0].status).toBe('in-progress')
-    })
+    const nextState = taskReducer(frozenState, { type: 'advance', id: '1' })
+    expect(nextState.tasks[0].status).toBe('in-progress')
+    expect(frozenState.tasks[0].status).toBe('todo')
+  })
+})
 
 describe('filterTasks and countByFilter', () => {
   it('filters and counts tasks accurately across all statuses and after deletion', () => {
     let state = taskReducer(initialState, { type: 'add', id: '1', title: 'T1' })
     state = taskReducer(state, { type: 'add', id: '2', title: 'T2' })
     state = taskReducer(state, { type: 'add', id: '3', title: 'T3' })
-    state = taskReducer(state, { type: 'advance', id: '2' }) // in-progress
+    state = taskReducer(state, { type: 'advance', id: '2' })
     state = taskReducer(state, { type: 'advance', id: '3' })
-    state = taskReducer(state, { type: 'advance', id: '3' }) // done
+    state = taskReducer(state, { type: 'advance', id: '3' })
 
     expect(countByFilter(state.tasks)).toEqual({
       all: 3,
@@ -107,7 +108,6 @@ describe('filterTasks and countByFilter', () => {
     expect(filterTasks(state.tasks, 'in-progress')).toHaveLength(1)
     expect(filterTasks(state.tasks, 'done')).toHaveLength(1)
 
-    // After deletion
     state = taskReducer(state, { type: 'remove', id: '2' })
     expect(countByFilter(state.tasks)).toEqual({
       all: 2,
