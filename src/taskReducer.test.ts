@@ -71,18 +71,20 @@ describe('taskReducer', () => {
     expect(state.tasks[0].status).toBe('done')
   })
 
-  it('does not mutate previous state (Object.freeze check)', () => {
-    const frozenState: State = Object.freeze({
-      tasks: Object.freeze([{ id: '1', title: 'Frozen', status: 'todo' as const }]) as State['tasks'],
-      filter: 'all',
-      past: Object.freeze([]) as State['past'],
-    })
+    it('does not mutate previous state', () => {
+        const prevTasks = [{ id: '1', title: 'Immutable', status: 'todo' as const }]
+        const prevState: State = {
+        tasks: prevTasks,
+        filter: 'all',
+        past: [],
+        }
 
-    const nextState = taskReducer(frozenState, { type: 'advance', id: '1' })
-    expect(nextState.tasks[0].status).toBe('in-progress')
-    expect(frozenState.tasks[0].status).toBe('todo')
-  })
-})
+        const nextState = taskReducer(prevState, { type: 'advance', id: '1' })
+        expect(nextState).not.toBe(prevState)
+        expect(nextState.tasks).not.toBe(prevTasks)
+        expect(prevState.tasks[0].status).toBe('todo')
+        expect(nextState.tasks[0].status).toBe('in-progress')
+    })
 
 describe('filterTasks and countByFilter', () => {
   it('filters and counts tasks accurately across all statuses and after deletion', () => {
